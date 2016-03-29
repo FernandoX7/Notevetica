@@ -1,5 +1,6 @@
 package com.x.ramirezfe.notevetica;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -60,7 +61,7 @@ public class CreateNoteActivity extends AppCompatActivity {
         intent.putExtra(EXTRA_TITLE, title);
         intent.putExtra(EXTRA_DESCRIPTION, description);
         // Go back to MainActivity
-        startActivity(intent);
+        setResult(Activity.RESULT_OK, intent);
         finish();
     }
 

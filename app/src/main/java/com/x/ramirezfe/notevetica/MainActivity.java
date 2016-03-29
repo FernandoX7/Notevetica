@@ -1,5 +1,6 @@
 package com.x.ramirezfe.notevetica;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -55,14 +56,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Check for notes that may have just been added
-        Intent intent = getIntent();
-        String passedTitle = intent.getStringExtra(CreateNoteActivity.EXTRA_TITLE);
-        String passedDescription = intent.getStringExtra(CreateNoteActivity.EXTRA_DESCRIPTION);
-        if (passedTitle != null && passedDescription != null) {
-            notes.add(new Note(passedTitle, passedDescription));
-        }
-
     }
 
     @Override
@@ -114,10 +107,27 @@ public class MainActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 123) {
+            if (resultCode == Activity.RESULT_OK) {
+                String passedTitle = data.getStringExtra(CreateNoteActivity.EXTRA_TITLE);
+                String passedDescription = data.getStringExtra(CreateNoteActivity.EXTRA_DESCRIPTION);
+                notes.add(new Note(passedTitle, passedDescription));
+                refreshAdapter();
+            }
+            if (resultCode == Activity.RESULT_CANCELED) {
+                Snackbar snackbar = Snackbar
+                        .make(recyclerView, "Request failed", Snackbar.LENGTH_SHORT);
+                snackbar.show();
+            }
+        }
+    }
+
     // Called when user clicks FAB
     public void createNote(View view) {
         Intent intent = new Intent(this, CreateNoteActivity.class);
-        startActivity(intent);
+        startActivityForResult(intent, 123);
     }
 
 }
