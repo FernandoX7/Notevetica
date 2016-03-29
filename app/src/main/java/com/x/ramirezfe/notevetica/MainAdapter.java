@@ -31,7 +31,7 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.NoteViewHolder
         }
     }
 
-    MainAdapter(List<Note> notes){
+    MainAdapter(List<Note> notes) {
         this.notes = notes;
     }
 

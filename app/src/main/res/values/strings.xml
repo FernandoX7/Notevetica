@@ -4,4 +4,5 @@
     <string name="lorem_ipsum_short">Lorem ipsum dolor sit amet, pro illum alterum scribentur an, te esse latine est.</string>
     <string name="lorem_ipsum_medium">Lorem ipsum dolor sit amet, vim ne assentior deseruisse accommodare, vel ut porro graeco. Sonet dolorem duo in. Ius modus epicuri eu, laoreet deseruisse consectetuer mei te.</string>
     <string name="lorem_ipsum_long">Lorem ipsum dolor sit amet, vim ne assentior deseruisse accommodare, vel ut porro graeco. Sonet dolorem duo in. Ius modus epicuri eu, laoreet deseruisse consectetuer mei te. Omittam luptatum ei sit, sumo blandit in vel. Ne quando graece fabellas eam.</string>
+    <string name="title_activity_create_note">New</string>
 </resources>

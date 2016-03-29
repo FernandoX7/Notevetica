@@ -1,5 +1,6 @@
 package com.x.ramirezfe.notevetica;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -49,9 +50,19 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                addTestData();
+                createNote(view);
+                // addTestData();
             }
         });
+
+        // Check for notes that may have just been added
+        Intent intent = getIntent();
+        String passedTitle = intent.getStringExtra(CreateNoteActivity.EXTRA_TITLE);
+        String passedDescription = intent.getStringExtra(CreateNoteActivity.EXTRA_DESCRIPTION);
+        if (passedTitle != null && passedDescription != null) {
+            notes.add(new Note(passedTitle, passedDescription));
+        }
+
     }
 
     @Override
@@ -78,7 +89,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void initializeData() {
         notes.add(new Note("This is the first notes title", getResources().getString(R.string.lorem_ipsum_short)));
-        notes.add(new Note("Note 2", "This is the second description"));
         notes.add(new Note("Anniversary", "Let's think about what to do this year."));
         notes.add(new Note("Medium Sized", getResources().getString(R.string.lorem_ipsum_medium)));
         notes.add(new Note("Thanksgiving Dinner RSVPs", "Eric Jones. Bryan Smith. Lauren Far. Jovanni Aikens."));
@@ -102,6 +112,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void refreshAdapter() {
         adapter.notifyDataSetChanged();
+    }
+
+    // Called when user clicks FAB
+    public void createNote(View view) {
+        Intent intent = new Intent(this, CreateNoteActivity.class);
+        startActivity(intent);
     }
 
 }
