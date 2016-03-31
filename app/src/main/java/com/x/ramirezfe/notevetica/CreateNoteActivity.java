@@ -1,10 +1,12 @@
 package com.x.ramirezfe.notevetica;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
@@ -48,35 +50,7 @@ public class CreateNoteActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Check to see if at least one field is populated with data
-                String title = etTitle.getText().toString();
-                String description = etDescription.getText().toString();
-                title = title.trim(); // Remove whitespaces at the beginning/end
-                description = description.trim();
-
-                // Get intent extras
-                Intent intent = getIntent();
-                String alreadyCreatedTitle = intent.getStringExtra(CreateNoteActivity.EXTRA_TITLE);
-                String alreadyCreatedDescription = intent.getStringExtra(CreateNoteActivity.EXTRA_DESCRIPTION);
-
-                // Check to see if note title is empty, if it is, don't save
-                if (title == "" || title.isEmpty()) {
-                    Notify.snack(view, "Title may not be empty");
-                    // If the user clicked an already made note and did not change its contents, go back to MainActivity
-                } else if (title.equals(alreadyCreatedTitle) && description.equals(alreadyCreatedDescription)) {
-                    finish();
-                    CreateNoteActivity.didClick = false;
-                    // The user is editing a note
-                } else if (didClick) {
-                    // If the title or description is different then resave the note
-                    if (!title.equals(alreadyCreatedTitle) || !description.equals(alreadyCreatedDescription)) {
-                        // TODO: Make it resave the note object
-                        saveNote();
-                    }
-                } else {
-                    saveNote();
-                    CreateNoteActivity.didClick = false;
-                }
+                prepareForSavingNote(view);
             }
 
         });
@@ -96,6 +70,70 @@ public class CreateNoteActivity extends AppCompatActivity {
         // Go back to MainActivity
         setResult(Activity.RESULT_OK, intent);
         finish();
+    }
+
+    @Override
+    public void onBackPressed() {
+        prepareForSavingNote(null);
+    }
+
+    // Check to see if note can be saved
+    /*
+        @param view - Your view. (It CAN be null if you don't need the snackbar, which requires a view)
+     */
+    public void prepareForSavingNote(View view) {
+        // Check to see if at least one field is populated with data
+        String title = etTitle.getText().toString();
+        String description = etDescription.getText().toString();
+        title = title.trim(); // Remove whitespaces at the beginning/end
+        description = description.trim();
+
+        // Get intent extras
+        Intent intent = getIntent();
+        String alreadyCreatedTitle = intent.getStringExtra(CreateNoteActivity.EXTRA_TITLE);
+        String alreadyCreatedDescription = intent.getStringExtra(CreateNoteActivity.EXTRA_DESCRIPTION);
+
+        // Check to see if note title is empty, if it is, don't save
+        if (title == "" || title.isEmpty()) {
+            // Checks to see if the user clicked on create note, then just clicked the back button
+            if (view == null) {
+                finish();
+            } else {
+                Notify.snack(view, "Title may not be empty");
+            }
+            // If the user clicked an already made note and did not change its contents, go back to MainActivity
+        } else if (title.equals(alreadyCreatedTitle) && description.equals(alreadyCreatedDescription)) {
+            finish();
+            CreateNoteActivity.didClick = false;
+            // The user is editing a note
+        } else if (didClick) {
+            // If the title or description is different then resave the note
+            if (!title.equals(alreadyCreatedTitle) || !description.equals(alreadyCreatedDescription)) {
+                if (view == null) {
+                    // User is leaving by pressing the back button and has unsaved changes...alert them
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.AppCompatAlertDialogStyle);
+                    builder.setTitle("Would you like to save your changes?");
+                    builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            saveNote();
+                            dialog.cancel();
+                        }
+                    });
+                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            finish();
+                            dialog.cancel();
+                        }
+                    });
+                    builder.show();
+                } else {
+                    saveNote();
+                }
+            }
+        } else {
+            saveNote();
+            CreateNoteActivity.didClick = false;
+        }
     }
 
     // A user has clicked a note
