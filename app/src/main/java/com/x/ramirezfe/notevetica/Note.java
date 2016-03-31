@@ -33,5 +33,9 @@ public class Note {
         this.description = description;
     }
 
+    public Note() {
+        // Empty
+    }
+
 
 }
