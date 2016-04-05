@@ -26,7 +26,7 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.NoteViewHolder
 
     List<Note> notes;
 
-    public static class NoteViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    public static class NoteViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
 
         CardView cardView;
         TextView noteTitle;
@@ -36,24 +36,18 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.NoteViewHolder
         private TextView descriptionTV;
         private Context context;
 
-        NoteViewHolder(View itemView) {
+        public NoteViewHolder(View itemView) {
             super(itemView);
             this.view = itemView;
             context = itemView.getContext();
             titleTV = (TextView) view.findViewById(R.id.note_title);
             descriptionTV = (TextView) view.findViewById(R.id.note_description);
             itemView.setOnClickListener(this);
+            itemView.setOnLongClickListener(this);
             cardView = (CardView) itemView.findViewById(R.id.notes_card_view);
             noteTitle = (TextView) itemView.findViewById(R.id.note_title);
             noteDescription = (TextView) itemView.findViewById(R.id.note_description);
 
-            view.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View v) {
-                    Toast.makeText(v.getContext(), "Position is " + getAdapterPosition(), Toast.LENGTH_SHORT).show();
-                    return true;
-                }
-            });
 
         }
 
@@ -67,6 +61,13 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.NoteViewHolder
             intent.putExtra(CreateNoteActivity.EXTRA_DESCRIPTION, descriptionTV.getText().toString());
             intent.putExtra("ID", getAdapterPosition());
             ((Activity) context).startActivityForResult(intent, 123);
+        }
+
+        @Override
+        public boolean onLongClick(View v) {
+            // This line below is used to be able to get the RecyclerView's onClick working in the activity class
+            ((MainActivity) context).onClickCalledFromRecyclerView();
+            return true;
         }
 
     }

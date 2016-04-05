@@ -2,9 +2,12 @@ package com.x.ramirezfe.notevetica;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -13,9 +16,14 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.afollestad.materialcab.MaterialCab;
+
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -25,12 +33,15 @@ import java.util.List;
     Displays notes in a recycler view
  */
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements MaterialCab.Callback {
 
     private List<Note> notes = new ArrayList<>();
     private RecyclerView recyclerView;
     MainAdapter adapter;
     private static String TAG = MainActivity.class.getSimpleName();
+    private MaterialCab mCab;
+    private Toolbar toolbar;
+    private TextView toolbarsTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,18 +49,20 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Toolbar
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        TextView toolbarTitle = (TextView) toolbar.findViewById(R.id.toolbar_title);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbarsTitle = (TextView) findViewById(R.id.toolbar_title);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false); // Hide toolbar title
 
         // RecyclerView
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
 
+
         // Linear Layout Manager
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         recyclerView.setHasFixedSize(true); // If the view won't be changing, set to true
         recyclerView.setLayoutManager(linearLayoutManager);
+
 
         loadTestData();
         initializeAdapter();
@@ -66,10 +79,59 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    // Called from MainAdapter.java
+    // *You can add parameters to the method if you need to pass them from the adapter in the future
+    public void onClickCalledFromRecyclerView() {
+        createContextualToolbar();
+    }
+
+    @Override
+    public boolean onCabCreated(MaterialCab cab, Menu menu) {
+        // Makes the icons in the overflow menu visible
+        if (menu.getClass().getSimpleName().equals("MenuBuilder")) {
+            try {
+                Field field = menu.getClass().getDeclaredField("mOptionalIconsVisible");
+                field.setAccessible(true);
+                field.setBoolean(menu, true);
+            } catch (Exception ignored) {
+                ignored.printStackTrace();
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onCabItemClicked(MenuItem item) {
+        Notify.message(getApplicationContext(), (String) item.getTitle());
+        return true;
+    }
+
+    @Override
+    public boolean onCabFinished(MaterialCab cab) {
+        // Clear selected in adapter
+        toolbar.setVisibility(View.VISIBLE);
+        toolbarsTitle.setVisibility(View.VISIBLE);
+        return true; // allow destruction
+    }
+
+
     @Override
     protected void onResume() {
         super.onResume();
     }
+
+    @Override
+    public void onBackPressed() {
+        if (mCab != null && mCab.isActive()) {
+            mCab.finish();
+            mCab = null;
+            toolbar.setVisibility(View.VISIBLE);
+            toolbarsTitle.setVisibility(View.VISIBLE);
+        } else {
+            super.onBackPressed();
+        }
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -90,6 +152,25 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public void createContextualToolbar() {
+        mCab = new MaterialCab(this, R.id.cab_stub)
+                .setTitleRes(R.string.app_name) // TODO: Show selected item count as you click on a row
+                .setMenu(R.menu.note_context_menu)
+                .setPopupMenuTheme(R.style.ThemeOverlay_AppCompat_Light)
+                .setContentInsetStartRes(R.dimen.mcab_default_content_inset)
+                .setBackgroundColorRes(R.color.statusBarPrimary)
+                .setCloseDrawableRes(R.drawable.mcab_nav_back)
+                .start(this);
+        // Hide toolbar and its items, and update the colors
+        toolbar.setVisibility(View.GONE);
+        toolbarsTitle.setVisibility(View.GONE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Window window = getWindow();
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(ContextCompat.getColor(getApplicationContext(), R.color.statusBarPrimaryDark));
+        }
     }
 
     private void loadTestData() {

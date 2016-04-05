@@ -3,6 +3,9 @@
     <color name="colorPrimary">#3a3e4a</color>
     <color name="colorPrimaryDark">#353943</color>
     <color name="colorAccent">#ff2d55</color>
+    <color name="colorAccentDark">#ff0d3b</color>
+    <color name="statusBarPrimary">#607D8B</color>
+    <color name="statusBarPrimaryDark">#263238</color>
     <color name="activity_background_color">#e5e5e5</color>
     <color name="textPrimary">#3a3e4a</color>
     <color name="textSecondary">#b0b2b7</color>
