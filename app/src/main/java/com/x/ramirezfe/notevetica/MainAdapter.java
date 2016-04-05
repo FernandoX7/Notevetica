@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.List;
 
@@ -45,6 +46,15 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.NoteViewHolder
             cardView = (CardView) itemView.findViewById(R.id.notes_card_view);
             noteTitle = (TextView) itemView.findViewById(R.id.note_title);
             noteDescription = (TextView) itemView.findViewById(R.id.note_description);
+
+            view.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    Toast.makeText(v.getContext(), "Position is " + getAdapterPosition(), Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+            });
+
         }
 
         @Override
