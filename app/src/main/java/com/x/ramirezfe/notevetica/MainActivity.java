@@ -1,25 +1,30 @@
 package com.x.ramirezfe.notevetica;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.view.ActionMode;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.transition.ChangeTransform;
 import android.util.Log;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.afollestad.materialcab.MaterialCab;
 
@@ -39,14 +44,18 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
     private RecyclerView recyclerView;
     MainAdapter adapter;
     private static String TAG = MainActivity.class.getSimpleName();
-    private MaterialCab mCab;
+    private MaterialCab editModeToolbar;
     private Toolbar toolbar;
     private TextView toolbarsTitle;
+    private ArrayList<Integer> selectedCards;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        selectedCards = new ArrayList<>();
 
         // Toolbar
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -57,12 +66,10 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
         // RecyclerView
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
 
-
         // Linear Layout Manager
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         recyclerView.setHasFixedSize(true); // If the view won't be changing, set to true
         recyclerView.setLayoutManager(linearLayoutManager);
-
 
         loadTestData();
         initializeAdapter();
@@ -77,12 +84,115 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
             }
         });
 
+        // Swype to delete
+        SwipeableRecyclerViewTouchListener swipeTouchListener =
+                new SwipeableRecyclerViewTouchListener(recyclerView,
+                        new SwipeableRecyclerViewTouchListener.SwipeListener() {
+                            @Override
+                            public boolean canSwipeLeft(int position) {
+                                return true;
+                            }
+
+                            @Override
+                            public boolean canSwipeRight(int position) {
+                                return false;
+                            }
+
+                            @Override
+                            public void onDismissedBySwipeLeft(final RecyclerView recyclerView, int[] reverseSortedPositions) {
+                                for (final int position : reverseSortedPositions) {
+                                    // Save data just in case it was an accident
+                                    String savedNoteTitle = notes.get(position).getTitle();
+                                    String savedNoteDescription = notes.get(position).getDescription();
+                                    final Note note = new Note(savedNoteTitle, savedNoteDescription);
+                                    final int savedNotePosition = position;
+                                    // Remove note object
+                                    notes.remove(position);
+                                    adapter.notifyItemRemoved(position);
+                                    // Undo option
+                                    Snackbar snackbar = Snackbar.make(recyclerView, "Note deleted", Snackbar.LENGTH_LONG)
+                                            .setAction("UNDO", new View.OnClickListener() {
+                                                @Override
+                                                public void onClick(View view) {
+                                                    // Restore saved data
+                                                    // TODO Add animation
+                                                    notes.add(savedNotePosition, note);
+                                                    adapter.notifyItemRemoved(position);
+                                                    refreshAdapter();
+                                                    Snackbar snackbar1 = Snackbar.make(recyclerView, "Note restored", Snackbar.LENGTH_SHORT);
+                                                    snackbar1.show();
+                                                }
+                                            });
+
+                                    snackbar.show();
+                                }
+                                adapter.notifyDataSetChanged();
+                            }
+
+                            @Override
+                            public void onDismissedBySwipeRight(RecyclerView recyclerView, int[] reverseSortedPositions) {
+                                for (int position : reverseSortedPositions) {
+                                    notes.remove(position);
+                                    adapter.notifyItemRemoved(position);
+                                }
+                                adapter.notifyDataSetChanged();
+                            }
+                        });
+
+        recyclerView.addOnItemTouchListener(swipeTouchListener);
+
+    }
+
+    // Called from MainAdapter.java
+    // *You can add parameters to the method if you need to pass them from the adapter in the future
+    public void onLongClickCalledFromRecyclerView() {
+        Intent intent = getIntent();
+        int passedId = intent.getIntExtra("ID", CreateNoteActivity.EXTRA_ID);
+        selectedCards.add(passedId);
+
+        Notify.snack(recyclerView, "" + selectedCards);
+
+
+        CardView cardView = (CardView) findViewById(R.id.notes_card_view);
+        cardView.setBackground(ContextCompat.getDrawable(getApplicationContext(), R.color.colorPrimary));
+
+        createContextualToolbar();
     }
 
     // Called from MainAdapter.java
     // *You can add parameters to the method if you need to pass them from the adapter in the future
     public void onClickCalledFromRecyclerView() {
+        Intent intent = getIntent();
+        int passedId = intent.getIntExtra("ID", CreateNoteActivity.EXTRA_ID);
+        selectedCards.add(passedId);
+
+        Notify.snack(recyclerView, "" + selectedCards);
+
+
+        CardView cardView = (CardView) findViewById(R.id.notes_card_view);
+        cardView.setBackground(ContextCompat.getDrawable(getApplicationContext(), R.color.colorPrimary));
+
         createContextualToolbar();
+    }
+
+    /* Editing mode toolbar methods start here */
+    public void createContextualToolbar() {
+        editModeToolbar = new MaterialCab(this, R.id.cab_stub)
+                .setTitleRes(R.string.app_name) // TODO: Show selected item count as you click on a row
+                .setMenu(R.menu.note_context_menu)
+                .setPopupMenuTheme(R.style.ThemeOverlay_AppCompat_Light)
+                .setContentInsetStartRes(R.dimen.mcab_default_content_inset)
+                .setBackgroundColorRes(R.color.statusBarPrimary)
+                .setCloseDrawableRes(R.drawable.mcab_nav_back)
+                .start(this);
+        // Hide toolbar and its items, and update the colors
+        toolbar.setVisibility(View.GONE);
+        toolbarsTitle.setVisibility(View.GONE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Window window = getWindow();
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(ContextCompat.getColor(getApplicationContext(), R.color.statusBarPrimaryDark));
+        }
     }
 
     @Override
@@ -108,11 +218,13 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
 
     @Override
     public boolean onCabFinished(MaterialCab cab) {
-        // Clear selected in adapter
+        // TODO: Clear the selected items
         toolbar.setVisibility(View.VISIBLE);
         toolbarsTitle.setVisibility(View.VISIBLE);
         return true; // allow destruction
     }
+
+    /* End of editing mode toolbar methods */
 
 
     @Override
@@ -122,9 +234,9 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
 
     @Override
     public void onBackPressed() {
-        if (mCab != null && mCab.isActive()) {
-            mCab.finish();
-            mCab = null;
+        if (editModeToolbar != null && editModeToolbar.isActive()) {
+            editModeToolbar.finish();
+            editModeToolbar = null;
             toolbar.setVisibility(View.VISIBLE);
             toolbarsTitle.setVisibility(View.VISIBLE);
         } else {
@@ -135,7 +247,6 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
@@ -152,25 +263,6 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    public void createContextualToolbar() {
-        mCab = new MaterialCab(this, R.id.cab_stub)
-                .setTitleRes(R.string.app_name) // TODO: Show selected item count as you click on a row
-                .setMenu(R.menu.note_context_menu)
-                .setPopupMenuTheme(R.style.ThemeOverlay_AppCompat_Light)
-                .setContentInsetStartRes(R.dimen.mcab_default_content_inset)
-                .setBackgroundColorRes(R.color.statusBarPrimary)
-                .setCloseDrawableRes(R.drawable.mcab_nav_back)
-                .start(this);
-        // Hide toolbar and its items, and update the colors
-        toolbar.setVisibility(View.GONE);
-        toolbarsTitle.setVisibility(View.GONE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            Window window = getWindow();
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.setStatusBarColor(ContextCompat.getColor(getApplicationContext(), R.color.statusBarPrimaryDark));
-        }
     }
 
     private void loadTestData() {
@@ -245,5 +337,6 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
             iter.remove();
         }
     }
+
 
 }

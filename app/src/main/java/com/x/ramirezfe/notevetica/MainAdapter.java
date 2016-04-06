@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -61,12 +62,17 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.NoteViewHolder
             intent.putExtra(CreateNoteActivity.EXTRA_DESCRIPTION, descriptionTV.getText().toString());
             intent.putExtra("ID", getAdapterPosition());
             ((Activity) context).startActivityForResult(intent, 123);
+            // The line below is used to enable the RecyclerView's onClick() method in the activity class
+            ((MainActivity) context).onClickCalledFromRecyclerView();
         }
 
         @Override
         public boolean onLongClick(View v) {
-            // This line below is used to be able to get the RecyclerView's onClick working in the activity class
-            ((MainActivity) context).onClickCalledFromRecyclerView();
+            CreateNoteActivity.EXTRA_ID = getAdapterPosition();
+            Intent intent = new Intent(context, CreateNoteActivity.class);
+            intent.putExtra("ID", getAdapterPosition());
+            // The line below is used to enable the RecyclerView's onLongClick() method in the activity class
+            ((MainActivity) context).onLongClickCalledFromRecyclerView();
             return true;
         }
 
