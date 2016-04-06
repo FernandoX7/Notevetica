@@ -23,6 +23,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -162,17 +163,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
     // Called from MainAdapter.java
     // *You can add parameters to the method if you need to pass them from the adapter in the future
     public void onClickCalledFromRecyclerView() {
-        Intent intent = getIntent();
-        int passedId = intent.getIntExtra("ID", CreateNoteActivity.EXTRA_ID);
-        selectedCards.add(passedId);
 
-        Notify.snack(recyclerView, "" + selectedCards);
-
-
-        CardView cardView = (CardView) findViewById(R.id.notes_card_view);
-        cardView.setBackground(ContextCompat.getDrawable(getApplicationContext(), R.color.colorPrimary));
-
-        createContextualToolbar();
     }
 
     /* Editing mode toolbar methods start here */
@@ -230,6 +221,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
     @Override
     protected void onResume() {
         super.onResume();
+        hideKeyboard();
     }
 
     @Override
@@ -336,6 +328,10 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
             Note note = iter.next();
             iter.remove();
         }
+    }
+
+    public void hideKeyboard() {
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
     }
 
 

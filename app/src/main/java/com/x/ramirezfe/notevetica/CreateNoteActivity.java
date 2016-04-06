@@ -1,6 +1,7 @@
 package com.x.ramirezfe.notevetica;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -9,7 +10,11 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.InputType;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
 /*
@@ -40,6 +45,8 @@ public class CreateNoteActivity extends AppCompatActivity {
         // Init. Views
         etTitle = (EditText) findViewById(R.id.et_title);
         etDescription = (EditText) findViewById(R.id.et_description);
+
+        showKeyboard();
 
         if (didClick) {
             preparingForNoteEditing();
@@ -143,6 +150,28 @@ public class CreateNoteActivity extends AppCompatActivity {
         String description = intent.getStringExtra(CreateNoteActivity.EXTRA_DESCRIPTION);
         etTitle.setText(title);
         etDescription.setText(description);
+    }
+
+    public void onPause()
+    {
+        super.onPause();
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == android.R.id.home) {
+
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    public void showKeyboard() {
+        InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
     }
 
 

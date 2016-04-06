@@ -14,22 +14,24 @@
     tools:showIn="@layout/activity_create_note">
 
     <EditText
+        android:id="@+id/et_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fontFamily="sans-serif"
+        android:hint="Title"
+        android:inputType="textCapSentences"
         android:textColor="@color/textPrimary"
-        android:textSize="20sp"
-        android:id="@+id/et_title"
-        android:hint="Title" />
+        android:textSize="20sp" />
 
     <EditText
-        android:layout_width="match_parent"
         android:id="@+id/et_description"
-        android:fontFamily="sans-serif-light"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:textSize="18sp"
-        android:textColor="@color/textSecondary"
+        android:fontFamily="sans-serif-light"
         android:gravity="top"
-        android:hint="Description" />
+        android:hint="Description"
+        android:inputType="textCapSentences|textMultiLine"
+        android:textColor="@color/textSecondary"
+        android:textSize="18sp" />
 
 </LinearLayout>

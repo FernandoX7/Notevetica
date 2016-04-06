@@ -21,6 +21,7 @@
         <activity
             android:name=".CreateNoteActivity"
             android:label="@string/title_activity_create_note"
+            android:windowSoftInputMode="adjustResize"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
