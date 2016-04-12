@@ -34,4 +34,11 @@ public class Notify { // An original class lolllllll
         snackbar.show();
     }
 
+    /*
+        @param message = what you want to say
+     */
+    public static void out(String message) {
+        System.out.println("[*][*]System[*][*] " + message);
+    }
+
 }

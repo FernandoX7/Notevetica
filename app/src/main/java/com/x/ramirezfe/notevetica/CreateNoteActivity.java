@@ -1,21 +1,26 @@
 package com.x.ramirezfe.notevetica;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.InputType;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+
+import com.backendless.Backendless;
+import com.backendless.async.callback.AsyncCallback;
+import com.backendless.exceptions.BackendlessFault;
+
+import butterknife.Bind;
+import butterknife.ButterKnife;
 
 /*
     Activity used to create a new note
@@ -25,34 +30,43 @@ import android.widget.EditText;
 public class CreateNoteActivity extends AppCompatActivity {
 
     // Views
-    private EditText etTitle;
-    private EditText etDescription;
-
-    // Intent Extras
-    public final static String EXTRA_TITLE = "com.x.ramirezfe.notevetica.TITLE";
-    public final static String EXTRA_DESCRIPTION = "com.x.ramirezfe.notevetica.DESCRIPTION";
-    public static int EXTRA_ID;
-
-    public static boolean didClick = false; // Used to keep track if the user clicked on an existing note
+    @Bind(R.id.et_title)
+    EditText etTitle;
+    @Bind(R.id.et_description)
+    EditText etDescription;
+    @Bind(R.id.toolbar)
+    Toolbar toolbar;
+    // Misc. Variables
+    private String etTitleText, etDescriptionText;
+    private static String TAG = CreateNoteActivity.class.getSimpleName();
+    // Objects
+    private Note note = new Note();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_note);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        // ButterKnife
+        ButterKnife.bind(this);
+        // Toolbar
         setSupportActionBar(toolbar);
-
-        // Init. Views
-        etTitle = (EditText) findViewById(R.id.et_title);
-        etDescription = (EditText) findViewById(R.id.et_description);
-
+        // Open keyboard automatically
         showKeyboard();
 
-        if (didClick) {
-            preparingForNoteEditing();
+        // Check if the note extras were passed (did the user click a note or not)
+        Intent intent = getIntent();
+        if (intent.getExtras() != null) {
+            String passedTitle = intent.getStringExtra(MainActivity.EXTRA_NOTE_TITLE);
+            String passedDescription = intent.getStringExtra(MainActivity.EXTRA_NOTE_DESCRIPTION);
+            String passedUUID = intent.getStringExtra(MainActivity.EXTRA_NOTE_UUID);
+            note.setTitle(passedTitle);
+            note.setDescription(passedDescription);
+            note.setObjectId(passedUUID);
+            etTitle.setText(passedTitle);
+            etDescription.setText(passedDescription);
         }
 
-        // FAB
+        // Save Note FAB
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -65,95 +79,88 @@ public class CreateNoteActivity extends AppCompatActivity {
 
     }
 
-    // Called when the save note FAB is clicked
-    public void saveNote() {
-        Intent intent = new Intent(this, MainActivity.class);
-        /* Save Note */
-        String title = etTitle.getText().toString();
-        String description = etDescription.getText().toString();
-        // Pass the EditText fields
-        intent.putExtra(EXTRA_TITLE, title);
-        intent.putExtra(EXTRA_DESCRIPTION, description);
-        // Go back to MainActivity
-        setResult(Activity.RESULT_OK, intent);
-        finish();
-    }
-
     @Override
     public void onBackPressed() {
+        // Check if the user has unsaved changes
         prepareForSavingNote(null);
     }
 
-    // Check to see if note can be saved
     /*
+        This method checks to see if a valid note can be created
         @param view - Your view. (It CAN be null if you don't need the snackbar, which requires a view)
      */
     public void prepareForSavingNote(View view) {
-        // Check to see if at least one field is populated with data
-        String title = etTitle.getText().toString();
-        String description = etDescription.getText().toString();
-        title = title.trim(); // Remove whitespaces at the beginning/end
-        description = description.trim();
-
-        // Get intent extras
+        // Get the EditText's latest values
+        refreshFieldData();
+        // Remove whitespaces at the beginning/end
+        etTitleText = etTitleText.trim();
+        etDescriptionText = etDescriptionText.trim();
+        // Retrieve the notes data passed by MainActivity's intent
         Intent intent = getIntent();
-        String alreadyCreatedTitle = intent.getStringExtra(CreateNoteActivity.EXTRA_TITLE);
-        String alreadyCreatedDescription = intent.getStringExtra(CreateNoteActivity.EXTRA_DESCRIPTION);
+        String passedTitle = intent.getStringExtra(MainActivity.EXTRA_NOTE_TITLE);
+        String passedDescription = intent.getStringExtra(MainActivity.EXTRA_NOTE_DESCRIPTION);
 
-        // Check to see if note title is empty, if it is, don't save
-        if (title == "" || title.isEmpty()) {
-            // Checks to see if the user clicked on create note, then just clicked the back button
+        // If note title is empty, DO NOT save
+        if (etTitleText.equals("") || etTitleText.isEmpty()) {
+            // If the user clicks the back button with nothing filled out, finish();
             if (view == null) {
                 finish();
             } else {
                 Notify.snack(view, "Title may not be empty");
             }
-            // If the user clicked an already made note and did not change its contents, go back to MainActivity
-        } else if (title.equals(alreadyCreatedTitle) && description.equals(alreadyCreatedDescription)) {
+            // User clicked a note they've already created and did no changes to it
+        } else if (etTitleText.equals(passedTitle) && etDescriptionText.equals(passedDescription)) {
             finish();
-            CreateNoteActivity.didClick = false;
-            // The user is editing a note
-        } else if (didClick) {
+            // The user clicked an existing note and pressed the back button
             // If the title or description is different then resave the note
-            if (!title.equals(alreadyCreatedTitle) || !description.equals(alreadyCreatedDescription)) {
-                if (view == null) {
-                    // User is leaving by pressing the back button and has unsaved changes...alert them
-                    AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.AppCompatAlertDialogStyle);
-                    builder.setTitle("Would you like to save your changes?");
-                    builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            saveNote();
-                            dialog.cancel();
-                        }
-                    });
-                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            finish();
-                            dialog.cancel();
-                        }
-                    });
-                    builder.show();
-                } else {
-                    saveNote();
-                }
+        } else if (!etTitleText.equals(passedTitle) || !etDescriptionText.equals(passedDescription)) {
+            if (view == null) {
+                // User is leaving by pressing the back button and has unsaved changes...alert them
+                AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.AppCompatAlertDialogStyle);
+                builder.setTitle("Would you like to save your changes?");
+                builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        saveNote(); // Resave note
+                        finish();
+                        dialog.cancel();
+                    }
+                });
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        finish();
+                        dialog.cancel();
+                    }
+                });
+                builder.show();
+            } else {
+                saveNote();
+                finish();
             }
-        } else {
-            saveNote();
-            CreateNoteActivity.didClick = false;
         }
     }
 
-    // A user has clicked a note
-    public void preparingForNoteEditing() {
-        Intent intent = getIntent();
-        String title = intent.getStringExtra(CreateNoteActivity.EXTRA_TITLE);
-        String description = intent.getStringExtra(CreateNoteActivity.EXTRA_DESCRIPTION);
-        etTitle.setText(title);
-        etDescription.setText(description);
+    // Called after "prepareForSavingNote()" declares that a note meets the criteria to be saved
+    public void saveNote() {
+        // Get the EditText's latest values
+        refreshFieldData();
+        // Apply the data to the note object
+        note.setTitle(etTitleText);
+        note.setDescription(etDescriptionText);
+        // Save to the backend
+        Backendless.Persistence.save(note, new AsyncCallback<Note>() {
+            public void handleResponse(Note response) {
+                Notify.out("Successfully saved the following note: " + response.toString());
+            }
+
+            public void handleFault(BackendlessFault fault) {
+                // An error has occurred
+                Log.e(TAG, fault.getCode());
+            }
+        });
+        finish();
     }
 
-    public void onPause()
-    {
+    public void onPause() {
         super.onPause();
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
     }
@@ -161,11 +168,13 @@ public class CreateNoteActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == android.R.id.home) {
 
-            finish();
+        if (id == android.R.id.home) {
+            // Check if the user has unsaved changes
+            prepareForSavingNote(null);
             return true;
         }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -174,6 +183,10 @@ public class CreateNoteActivity extends AppCompatActivity {
         inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
     }
 
+    public void refreshFieldData() {
+        etTitleText = etTitle.getText().toString();
+        etDescriptionText = etDescription.getText().toString();
+    }
+
 
 }
-
