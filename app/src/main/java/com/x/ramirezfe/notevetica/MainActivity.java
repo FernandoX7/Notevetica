@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -35,9 +36,8 @@ import java.util.List;
 import butterknife.Bind;
 import butterknife.ButterKnife;
 
-/*
-    Starting activity for app
-    Displays notes in a recycler view
+/**
+ * Activity used to display note objects inside of a RecyclerView
  */
 
 public class MainActivity extends AppCompatActivity implements MaterialCab.Callback {
@@ -115,62 +115,8 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
 
         );
 
-        // Swipe to delete
-//        SwipeableRecyclerViewTouchListener swipeTouchListener =
-//                new SwipeableRecyclerViewTouchListener(recyclerView,
-//                        new SwipeableRecyclerViewTouchListener.SwipeListener() {
-//                            @Override
-//                            public boolean canSwipeLeft(int position) {
-//                                return true;
-//                            }
-//
-//                            @Override
-//                            public boolean canSwipeRight(int position) {
-//                                return false;
-//                            }
-//
-//                            @Override
-//                            public void onDismissedBySwipeLeft(final RecyclerView recyclerView, int[] reverseSortedPositions) {
-//                                for (final int position : reverseSortedPositions) {
-//                                    // Save data just in case it was an accident
-//                                    String savedNoteTitle = notes.get(position).getTitle();
-//                                    String savedNoteDescription = notes.get(position).getDescription();
-//                                    final Note note = new Note(savedNoteTitle, savedNoteDescription);
-//                                    final int savedNotePosition = position;
-//                                    // Remove note object
-//                                    notes.remove(position);
-//                                    adapter.notifyItemRemoved(position);
-//                                    // Undo option
-//                                    Snackbar snackbar = Snackbar.make(recyclerView, "Note deleted", Snackbar.LENGTH_LONG)
-//                                            .setAction("UNDO", new View.OnClickListener() {
-//                                                @Override
-//                                                public void onClick(View view) {
-//                                                    // Restore saved data
-//                                                    // TODO Add animation
-//                                                    notes.add(savedNotePosition, note);
-//                                                    adapter.notifyItemRemoved(position);
-//                                                    refreshAdapter();
-//                                                    Snackbar snackbar1 = Snackbar.make(recyclerView, "Note restored", Snackbar.LENGTH_SHORT);
-//                                                    snackbar1.show();
-//                                                }
-//                                            });
-//
-//                                    snackbar.show();
-//                                }
-//                                adapter.notifyDataSetChanged();
-//                            }
-//
-//                            @Override
-//                            public void onDismissedBySwipeRight(RecyclerView recyclerView, int[] reverseSortedPositions) {
-//                                for (int position : reverseSortedPositions) {
-//                                    notes.remove(position);
-//                                    adapter.notifyItemRemoved(position);
-//                                }
-//                                adapter.notifyDataSetChanged();
-//                            }
-//                        });
-//
-//        recyclerView.addOnItemTouchListener(swipeTouchListener);
+        // Initialize swipe to delete algorithm
+        swipeToDeleteCard();
 
     }
 
@@ -399,7 +345,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
         int id = item.getItemId();
 
         if (id == R.id.action_settings) {
-            refreshAdapter();
+            refreshBackendNotesData();
             Notify.message(getApplicationContext(), "Refreshing data");
             return true;
         }
@@ -451,6 +397,84 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
                 Notify.out("Error logging out: " + fault.getCode() + " " + fault.getMessage());
             }
         });
+    }
+
+    /**
+     * Allows the user to swipe a card to delete it or perform other functions upon it
+     **/
+    private void swipeToDeleteCard() {
+        SwipeableRecyclerViewTouchListener swipeTouchListener =
+                new SwipeableRecyclerViewTouchListener(recyclerView,
+                        new SwipeableRecyclerViewTouchListener.SwipeListener() {
+                            @Override
+                            public boolean canSwipeLeft(int position) {
+                                return true;
+                            }
+
+                            @Override
+                            public boolean canSwipeRight(int position) {
+                                return false;
+                            }
+
+                            @Override
+                            public void onDismissedBySwipeLeft(final RecyclerView recyclerView, int[] reverseSortedPositions) {
+                                for (final int position : reverseSortedPositions) {
+                                    // Save data just in case it was an accident
+                                    Note note = notes.get(position);
+                                    final Note savedNote = new Note(note.getTitle(), note.getDescription());
+                                    // Delete the note
+                                    notes.remove(position);
+                                    Backendless.Persistence.of(Note.class).remove(note, new AsyncCallback<Long>() {
+                                        public void handleResponse(Long response) {
+                                            // Note has been deleted. The response is a time in milliseconds when the object was deleted
+                                        }
+
+                                        public void handleFault(BackendlessFault fault) {
+                                            Notify.out("Error deleting note, " + fault.getCode() + " " + fault.getMessage());
+                                        }
+                                    });
+
+                                    // Undo option
+                                    Snackbar snackbar = Snackbar.make(recyclerView, "Note deleted", Snackbar.LENGTH_LONG)
+                                            .setAction("UNDO", new View.OnClickListener() {
+                                                @Override
+                                                public void onClick(View view) {
+                                                    // Restore saved data
+                                                    // TODO Add animation
+                                                    // Save to the backend
+                                                    Backendless.Persistence.save(savedNote, new AsyncCallback<Note>() {
+                                                        public void handleResponse(Note response) {
+                                                            Notify.out("Successfully saved the following note: " + response.toString());
+                                                        }
+
+                                                        public void handleFault(BackendlessFault fault) {
+                                                            // An error has occurred
+                                                            Notify.out("Error restoring note, " + fault.getCode() + " " + fault.getMessage());
+                                                        }
+                                                    });
+
+                                                    refreshBackendNotesData();
+                                                    Snackbar snackbar2 = Snackbar.make(recyclerView, "Note restored", Snackbar.LENGTH_SHORT);
+                                                    snackbar2.show();
+                                                }
+                                            });
+
+                                    snackbar.show();
+                                }
+                                adapter.notifyDataSetChanged();
+                            }
+
+                            @Override
+                            public void onDismissedBySwipeRight(RecyclerView recyclerView, int[] reverseSortedPositions) {
+                                for (int position : reverseSortedPositions) {
+                                    notes.remove(position);
+                                    adapter.notifyItemRemoved(position);
+                                }
+                                adapter.notifyDataSetChanged();
+                            }
+                        });
+
+        recyclerView.addOnItemTouchListener(swipeTouchListener);
     }
 
 }
