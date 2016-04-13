@@ -9,6 +9,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
@@ -166,12 +167,71 @@ public class CreateNoteActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Only show the menu if a user clicked on the note, not just made a new one
+        Intent intent = getIntent();
+        if (intent.getExtras() != null) {
+            Boolean passedContextMenuVisibility = intent.getBooleanExtra(MainActivity.EXTRA_SHOW_CONTEXT_MENU, false);
+            if (passedContextMenuVisibility) {
+                getMenuInflater().inflate(R.menu.menu_create_note_activity, menu);
+            }
+        }
+        return true;
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
         if (id == android.R.id.home) {
             // Check if the user has unsaved changes
             prepareForSavingNote(null);
+            return true;
+        }
+
+        if (id == R.id.action_delete) {
+            Intent intent = getIntent();
+            if (intent.getExtras() != null) {
+                String passedTitle = intent.getStringExtra(MainActivity.EXTRA_NOTE_TITLE);
+                String passedDescription = intent.getStringExtra(MainActivity.EXTRA_NOTE_DESCRIPTION);
+                String passedUUID = intent.getStringExtra(MainActivity.EXTRA_NOTE_UUID);
+                Note note = new Note();
+                note.setTitle(passedTitle);
+                note.setDescription(passedDescription);
+                note.setObjectId(passedUUID);
+            }
+            // Alert the user that they are about to delete a note
+            AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.AppCompatAlertDialogStyle);
+            builder.setTitle("Are you sure you want to delete the following note?");
+            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    Backendless.Persistence.of(Note.class).remove(note, new AsyncCallback<Long>() {
+                        public void handleResponse(Long response) {
+                            // Note has been deleted. The response is a time in milliseconds when the object was deleted
+                            Notify.message(getApplicationContext(), "Note successfully deleted");
+                            finish();
+                        }
+
+                        public void handleFault(BackendlessFault fault) {
+                            Notify.out("Error deleting note, " + fault.getCode() + " " + fault.getMessage());
+                        }
+                    });
+                    dialog.cancel();
+                }
+            });
+            builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    finish();
+                    dialog.cancel();
+                }
+            });
+            builder.show();
+
+            return true;
+        }
+
+        if (id == R.id.action_share) {
+            Notify.message(getApplicationContext(), "Coming soon");
             return true;
         }
 

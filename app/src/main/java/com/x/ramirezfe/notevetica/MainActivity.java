@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
     public final static String EXTRA_NOTE_TITLE = "com.x.ramirezfe.notevetica.NOTE_TITLE";
     public final static String EXTRA_NOTE_DESCRIPTION = "com.x.ramirezfe.notevetica.NOTE_DESCRIPTION";
     public final static String EXTRA_NOTE_UUID = "com.x.ramirezfe.notevetica.NOTE_UUID";
+    public final static String EXTRA_SHOW_CONTEXT_MENU = "com.x.ramirezfe.notevetica.SHOW_CONTEXT_MENU";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +85,10 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
                 intent.putExtra(EXTRA_NOTE_TITLE, note.getTitle());
                 intent.putExtra(EXTRA_NOTE_DESCRIPTION, note.getDescription());
                 intent.putExtra(EXTRA_NOTE_UUID, note.getObjectId());
+                // Let the CreateNoteActivity know that you clicked a note, and therefore
+                // should show a context menu in the CreateNoteActivity so that users can delete a note
+                boolean contextMenuIsVisible = true;
+                intent.putExtra(EXTRA_SHOW_CONTEXT_MENU, contextMenuIsVisible);
                 startActivity(intent);
             }
 
