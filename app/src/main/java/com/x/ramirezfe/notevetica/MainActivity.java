@@ -2,6 +2,7 @@ package com.x.ramirezfe.notevetica;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -64,10 +65,6 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
         // ButterKnife
         ButterKnife.bind(this);
 
-        // Initialize Backendless
-        String appVersion = "v1";
-        Backendless.initApp(this, Constants.APP_ID, Constants.SECRET_KEY, appVersion);
-
         // Toolbar
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false); // Hide toolbar title
@@ -102,12 +99,16 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
 
         // Create note FAB
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                createNote();
-            }
-        });
+        fab.setOnClickListener(new View.OnClickListener()
+
+                               {
+                                   @Override
+                                   public void onClick(View view) {
+                                       createNote();
+                                   }
+                               }
+
+        );
 
         // Swipe to delete
 //        SwipeableRecyclerViewTouchListener swipeTouchListener =
@@ -214,6 +215,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
         @Override
         public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
         }
+
     }
     /* End of RecyclerView Click Listener */
 
@@ -255,7 +257,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
                 notes.clear();
                 while (iterator.hasNext()) {
                     Note note = iterator.next();
-                    Notify.out(note.toString());
+                    // Notify.out(note.toString());
                     notes.add(note);
                 }
                 refreshAdapter();
@@ -270,7 +272,9 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
         });
     }
 
-    /* Editing mode toolbar methods start here */
+    /***
+     * Editing mode toolbar methods start here
+     ***/
     public void createContextualToolbar() {
         editModeToolbar = new MaterialCab(this, R.id.cab_stub)
                 .setTitleRes(R.string.app_name) // TODO: Show selected item count as you click on a row
@@ -318,7 +322,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
         toolbarsTitle.setVisibility(View.VISIBLE);
         return true; // allow destruction
     }
-    /* End of editing mode toolbar methods */
+    /*** End of editing mode toolbar methods ***/
 
     /**
      * Called when the activity has become visible.
@@ -326,9 +330,9 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
     @Override
     protected void onResume() {
         super.onResume();
-        Notify.out("onResume();");
         refreshBackendNotesData();
         hideKeyboard();
+        // Notify.out("onResume();");
     }
 
     /**
@@ -337,7 +341,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
     @Override
     protected void onStart() {
         super.onStart();
-        Notify.out("onStart();");
+        // Notify.out("onStart();");
     }
 
     /**
@@ -346,7 +350,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
     @Override
     protected void onPause() {
         super.onPause();
-        Notify.out("onPause();");
+        // Notify.out("onPause();");
     }
 
     /**
@@ -355,7 +359,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
     @Override
     protected void onStop() {
         super.onStop();
-        Notify.out("onStop();");
+        // Notify.out("onStop();");
     }
 
     /**
@@ -364,7 +368,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Notify.out("onDestroy();");
+        // Notify.out("onDestroy();");
     }
 
     @Override
@@ -395,7 +399,14 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
             return true;
         }
         if (id == R.id.action_logout) {
-            Notify.message(getApplicationContext(), "Wut");
+            /*
+                Logout must also be saved in SharedPreferences
+             */
+            Boolean userLoggedIn = false;
+            SharedPreferences.Editor editor = getSharedPreferences(LoginActivity.SKIP_TO_MAIN_ACTIVITY, MODE_PRIVATE).edit();
+            editor.putBoolean(LoginActivity.SUCCESSFULLY_LOGGED_IN, userLoggedIn);
+            editor.commit();
+            logout();
             return true;
         }
 
@@ -416,5 +427,25 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
     }
 
+    /**
+     * Log the user out
+     **/
+    private void logout() {
+        Backendless.UserService.logout(new AsyncCallback<Void>() {
+            @Override
+            public void handleResponse(Void response) {
+                Notify.message(getApplicationContext(), "Successfully logged out");
+                Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+            }
+
+            @Override
+            public void handleFault(BackendlessFault fault) {
+                Notify.out("Error logging out: " + fault.getCode() + " " + fault.getMessage());
+            }
+        });
+    }
 
 }
