@@ -100,7 +100,8 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
         }));
 
         // prepareTestNotesData();
-        refreshBackendNotesData();
+        refreshOfflineNotesData();
+        // refreshBackendNotesData();
 
         // Create note FAB
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -223,6 +224,21 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
         });
     }
 
+    /**
+     * Sugar ORM
+     * -Load all the notes
+     */
+    private void refreshOfflineNotesData() {
+        List<Note> offlineNotes = Note.findWithQuery(Note.class, "Select * from Note");
+
+        for (Note note : offlineNotes) {
+            Notify.out("ONE" + note.toString());
+            notes.add(note);
+        }
+
+        refreshAdapter();
+    }
+
     /***
      * Editing mode toolbar methods start here
      ***/
@@ -281,7 +297,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
     @Override
     protected void onResume() {
         super.onResume();
-        refreshBackendNotesData();
+        // refreshBackendNotesData();
         hideKeyboard();
         // Notify.out("onResume();");
     }
@@ -358,6 +374,16 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
             editor.putBoolean(LoginActivity.SUCCESSFULLY_LOGGED_IN, userLoggedIn);
             editor.commit();
             logout();
+            return true;
+        }
+
+        if (id == R.id.action_sugar_orm) {
+            /** Sugar ORM
+             * Find by id
+             */
+            Note oNote = Note.findById(Note.class, 1);
+            Notify.out("SUGAR: " + oNote.toString());
+            oNote.save();
             return true;
         }
 

@@ -43,4 +43,5 @@ dependencies {
         transitive = true
     }
     compile 'com.backendless:backendless:3.0.11'
+    compile 'com.github.satyan:sugar:1.4'
 }

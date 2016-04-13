@@ -4,11 +4,14 @@ package com.x.ramirezfe.notevetica;
  * Created by Fernando on 4/7/16.
  */
 
-import android.app.Application;
-
 import com.backendless.Backendless;
 
-public class NoteApplication extends Application {
+/**
+ * Sugar ORM
+ * -Extends SugarApp so we can use Sugar ORM for offline saving
+ */
+
+public class NoteApplication extends com.orm.SugarApp {
 
     @Override
     public void onCreate() {

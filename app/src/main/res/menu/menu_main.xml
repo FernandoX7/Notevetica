@@ -9,8 +9,14 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_logout"
+        android:id="@+id/action_sugar_orm"
         android:orderInCategory="200"
+        android:title="Sugar ORM"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_logout"
+        android:orderInCategory="300"
         android:title="@string/action_logout"
         app:showAsAction="never" />
 

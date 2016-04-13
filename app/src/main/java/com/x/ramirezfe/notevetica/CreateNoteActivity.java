@@ -147,10 +147,19 @@ public class CreateNoteActivity extends AppCompatActivity {
         // Apply the data to the note object
         note.setTitle(etTitleText);
         note.setDescription(etDescriptionText);
+
+
         // Save to the backend
         Backendless.Persistence.save(note, new AsyncCallback<Note>() {
             public void handleResponse(Note response) {
-                Notify.out("Successfully saved the following note: " + response.toString());
+                Notify.out("CLOUD*Successfully saved the following note: " + response.toString());
+                /**
+                 * Sugar ORM
+                 * -Save offline
+                 */
+                note.setCreated(response.getCreated());
+                note.save();
+                Notify.out("OFFLINE*Successfully saved the following note: " + note.toString());
             }
 
             public void handleFault(BackendlessFault fault) {

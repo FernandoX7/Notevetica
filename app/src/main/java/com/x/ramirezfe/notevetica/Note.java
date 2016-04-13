@@ -1,12 +1,19 @@
 package com.x.ramirezfe.notevetica;
 
+import com.orm.SugarRecord;
+
 import java.util.Date;
 
 /**
  * Created by Fernando on 3/28/16.
  */
 
-public class Note {
+/**
+ * Sugar ORM
+ * -Extends SugarRecord so we can persist the Note object for offline capabilities
+ */
+
+public class Note extends SugarRecord {
 
     private String title;
     private String description;
