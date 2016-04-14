@@ -100,8 +100,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
         }));
 
         // prepareTestNotesData();
-        refreshOfflineNotesData();
-        // refreshBackendNotesData();
+        loadOfflineNotesData();
 
         // Create note FAB
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -228,15 +227,13 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
      * Sugar ORM
      * -Load all the notes
      */
-    private void refreshOfflineNotesData() {
-        List<Note> offlineNotes = Note.findWithQuery(Note.class, "Select * from Note");
-
+    private void loadOfflineNotesData() {
+        List<Note> offlineNotes = Note.listAll(Note.class);
+        notes.clear();
         for (Note note : offlineNotes) {
-            Notify.out("ONE" + note.toString());
             notes.add(note);
+            adapter.notifyDataSetChanged();
         }
-
-        refreshAdapter();
     }
 
     /***
@@ -297,7 +294,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
     @Override
     protected void onResume() {
         super.onResume();
-        // refreshBackendNotesData();
+        loadOfflineNotesData();
         hideKeyboard();
         // Notify.out("onResume();");
     }
@@ -361,7 +358,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
         int id = item.getItemId();
 
         if (id == R.id.action_settings) {
-            refreshBackendNotesData();
+            refreshAdapter();
             Notify.message(getApplicationContext(), "Refreshing data");
             return true;
         }
@@ -479,7 +476,7 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
                                                         }
                                                     });
 
-                                                    refreshBackendNotesData();
+                                                    refreshAdapter();
                                                     Snackbar snackbar2 = Snackbar.make(recyclerView, "Note restored", Snackbar.LENGTH_SHORT);
                                                     snackbar2.show();
                                                 }

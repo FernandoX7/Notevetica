@@ -75,10 +75,11 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         notifyDataSetChanged();
     }
 
-    public void refreshBackendList(List<Note> notes) {
+    public void refreshOfflineNotes(List<Note> notes) {
         notes.clear();
         notes.addAll(notes);
         notifyDataSetChanged();
     }
+
 
 }

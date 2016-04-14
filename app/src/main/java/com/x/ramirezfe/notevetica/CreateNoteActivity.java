@@ -19,6 +19,10 @@ import android.widget.EditText;
 import com.backendless.Backendless;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
+import com.orm.query.Condition;
+import com.orm.query.Select;
+
+import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -135,7 +139,6 @@ public class CreateNoteActivity extends AppCompatActivity {
                 builder.show();
             } else {
                 saveNote();
-                finish();
             }
         }
     }
@@ -148,18 +151,37 @@ public class CreateNoteActivity extends AppCompatActivity {
         note.setTitle(etTitleText);
         note.setDescription(etDescriptionText);
 
-
         // Save to the backend
         Backendless.Persistence.save(note, new AsyncCallback<Note>() {
             public void handleResponse(Note response) {
-                Notify.out("CLOUD*Successfully saved the following note: " + response.toString());
+                Notify.out("*ONLINE* Successfully saved the following note: " + response.toString());
                 /**
                  * Sugar ORM
-                 * -Save offline
+                 * -Save/resave offline note
                  */
-                note.setCreated(response.getCreated());
-                note.save();
-                Notify.out("OFFLINE*Successfully saved the following note: " + note.toString());
+                Intent intent = getIntent();
+                if (intent.getExtras() != null) {
+                    String passedUUID = intent.getStringExtra(MainActivity.EXTRA_NOTE_UUID);
+                    // Resave the offline note
+                    if (passedUUID.equals(response.getObjectId())) {
+                        Select getExistingNote = Select.from(Note.class).where(Condition.prop("object_id").eq(passedUUID));
+                        List<Note> existingNotes = getExistingNote.list();
+                        for (Note note : existingNotes) {
+                            note.setTitle(response.getTitle());
+                            note.setDescription(response.getDescription());
+                            note.setUpdated(response.getUpdated());
+                            note.save();
+                            finish();
+                            Notify.out("*OFFLINE* Successfully resaved the following note: " + note.toString());
+                        }
+                    }
+                } else {
+                    // Save a new offline note
+                    note.setCreated(response.getCreated());
+                    note.save();
+                    finish();
+                    Notify.out("*OFFLINE* Successfully saved the following note: " + note.toString());
+                }
             }
 
             public void handleFault(BackendlessFault fault) {
@@ -167,7 +189,6 @@ public class CreateNoteActivity extends AppCompatActivity {
                 Log.e(TAG, fault.getCode());
             }
         });
-        finish();
     }
 
     public void onPause() {
