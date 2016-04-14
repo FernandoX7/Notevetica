@@ -154,6 +154,7 @@ public class CreateNoteActivity extends AppCompatActivity {
         // Save to the backend
         Backendless.Persistence.save(note, new AsyncCallback<Note>() {
             public void handleResponse(Note response) {
+
                 Notify.out("*ONLINE* Successfully saved the following note: " + response.toString());
                 /**
                  * Sugar ORM
@@ -238,6 +239,23 @@ public class CreateNoteActivity extends AppCompatActivity {
                     Backendless.Persistence.of(Note.class).remove(note, new AsyncCallback<Long>() {
                         public void handleResponse(Long response) {
                             // Note has been deleted. The response is a time in milliseconds when the object was deleted
+                            /**
+                             * Sugar ORM
+                             * -Delete offline note
+                             */
+                            Intent intent = getIntent();
+                            if (intent.getExtras() != null) {
+                                String passedUUID = intent.getStringExtra(MainActivity.EXTRA_NOTE_UUID);
+                                if (passedUUID.equals(note.getObjectId())) {
+                                    Select getExistingNote = Select.from(Note.class).where(Condition.prop("object_id").eq(passedUUID));
+                                    List<Note> existingNotes = getExistingNote.list();
+                                    for (Note note : existingNotes) {
+                                        note.delete();
+                                        finish();
+                                        Notify.out("*OFFLINE* Successfully deleted the following note: " + note.toString());
+                                    }
+                                }
+                            }
                             Notify.message(getApplicationContext(), "Note successfully deleted");
                             finish();
                         }
