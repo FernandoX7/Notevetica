@@ -447,9 +447,16 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
                                     final Note savedNote = new Note(note.getTitle(), note.getDescription());
                                     // Delete the note
                                     notes.remove(position);
+                                    /**
+                                     * Sugar ORM
+                                     * -Delete offline note
+                                     */
+                                    note.delete();
                                     Backendless.Persistence.of(Note.class).remove(note, new AsyncCallback<Long>() {
                                         public void handleResponse(Long response) {
                                             // Note has been deleted. The response is a time in milliseconds when the object was deleted
+
+
                                         }
 
                                         public void handleFault(BackendlessFault fault) {
@@ -468,6 +475,13 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
                                                     Backendless.Persistence.save(savedNote, new AsyncCallback<Note>() {
                                                         public void handleResponse(Note response) {
                                                             Notify.out("Successfully saved the following note: " + response.toString());
+                                                            /**
+                                                             * Sugar ORM
+                                                             * -Save offline note
+                                                             */
+                                                            savedNote.setCreated(response.getCreated());
+                                                            savedNote.save();
+                                                            loadOfflineNotesData();
                                                         }
 
                                                         public void handleFault(BackendlessFault fault) {
