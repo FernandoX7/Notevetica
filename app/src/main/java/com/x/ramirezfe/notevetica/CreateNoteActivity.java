@@ -22,6 +22,9 @@ import com.backendless.exceptions.BackendlessFault;
 import com.orm.query.Condition;
 import com.orm.query.Select;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 import butterknife.Bind;
@@ -150,11 +153,13 @@ public class CreateNoteActivity extends AppCompatActivity {
         // Apply the data to the note object
         note.setTitle(etTitleText);
         note.setDescription(etDescriptionText);
-
+        // Get the current data and save it into "updatedData" variable so we can use this to the sort the list
+        DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+        Date date = new Date();
+        note.setUpdatedDate(dateFormat.format(date));
         // Save to the backend
         Backendless.Persistence.save(note, new AsyncCallback<Note>() {
             public void handleResponse(Note response) {
-
                 Notify.out("*ONLINE* Successfully saved the following note: " + response.toString());
                 /**
                  * Sugar ORM
@@ -171,6 +176,11 @@ public class CreateNoteActivity extends AppCompatActivity {
                             note.setTitle(response.getTitle());
                             note.setDescription(response.getDescription());
                             note.setUpdated(response.getUpdated());
+                            // Get the current data and save it into "updatedData" variable so we can use this to the sort the list
+                            DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+                            Date date = new Date();
+                            note.setUpdatedDate(dateFormat.format(date));
+                            // Save
                             note.save();
                             finish();
                             Notify.out("*OFFLINE* Successfully resaved the following note: " + note.toString());
@@ -179,6 +189,11 @@ public class CreateNoteActivity extends AppCompatActivity {
                 } else {
                     // Save a new offline note
                     note.setCreated(response.getCreated());
+                    // Get the current data and save it into "updatedData" variable so we can use this to the sort the list
+                    DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+                    Date date = new Date();
+                    note.setUpdatedDate(dateFormat.format(date));
+                    // Save
                     note.save();
                     finish();
                     Notify.out("*OFFLINE* Successfully saved the following note: " + note.toString());

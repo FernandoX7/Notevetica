@@ -225,15 +225,16 @@ public class MainActivity extends AppCompatActivity implements MaterialCab.Callb
 
     /**
      * Sugar ORM
-     * -Load all the notes
+     * -Load all the notes and sort them by Note.updatedDate
      */
     private void loadOfflineNotesData() {
-        List<Note> offlineNotes = Note.listAll(Note.class);
+        List<Note> offlineNotes = Note.findWithQuery(Note.class, "Select * from Note ORDER BY updated_date asc");
         notes.clear();
         for (Note note : offlineNotes) {
-            notes.add(note);
-            adapter.notifyDataSetChanged();
+            notes.add(0, note);
+
         }
+        adapter.notifyDataSetChanged();
     }
 
     /***

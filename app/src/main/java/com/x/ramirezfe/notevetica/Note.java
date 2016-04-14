@@ -21,6 +21,8 @@ public class Note extends SugarRecord {
     private Date created;
     private Date updated;
     private String objectId;
+    //  updatedData' is used to sort notes
+    private String updatedDate;
 
     public String getTitle() {
         return title;
@@ -71,6 +73,13 @@ public class Note extends SugarRecord {
         // Empty
     }
 
+    public String getUpdatedDate() {
+        return updatedDate;
+    }
+
+    public void setUpdatedDate(String updatedDate) {
+        this.updatedDate = updatedDate;
+    }
 
     @Override
     public String toString() {
