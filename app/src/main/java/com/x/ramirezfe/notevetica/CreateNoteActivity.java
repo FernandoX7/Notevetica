@@ -129,7 +129,6 @@ public class CreateNoteActivity extends AppCompatActivity {
                 builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         saveNote(); // Resave note
-                        finish();
                         dialog.cancel();
                     }
                 });
