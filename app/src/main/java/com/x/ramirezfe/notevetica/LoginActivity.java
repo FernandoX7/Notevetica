@@ -74,7 +74,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     @OnClick(R.id.loginButton)
-    public void login(View view) {
+    public void login(final View view) {
         // Check for an internet connection in a different thread
         new Thread() {
             public void run() {
@@ -84,11 +84,17 @@ public class LoginActivity extends AppCompatActivity {
                         String email = emailEditText.getText().toString();
                         String password = passwordEditText.getText().toString();
 
+                        // Trim the whitespaces
+                        email = email.trim();
+                        password = password.trim();
+
                         // Check if fields are not empty
-                        if (email.equals("") || email.isEmpty()) {
-                            //Notify.snack(view, "Email cannot be empty");
+                        if (email.equals("") && password.equals("")) {
+                            Notify.snack(view, "Fields cannot be empty");
+                        } else if (email.equals("") || email.isEmpty()) {
+                            Notify.snack(view, "Email cannot be empty");
                         } else if (password.equals("") || password.isEmpty()) {
-                            //  Notify.snack(view, "Password cannot be empty");
+                            Notify.snack(view, "Password cannot be empty");
                         }
 
                         // Log in
@@ -112,6 +118,12 @@ public class LoginActivity extends AppCompatActivity {
                                 if (fault.getCode().equals("3003")) {
                                     Notify.message(getApplicationContext(), "Invalid username and/or password");
                                 }
+                                // Network connection blocked (Example: school network blocking)
+                                if (fault.getMessage().contains("failed to connect to api.backendless.com")) {
+                                    Notify.out("CODE " + fault.getCode() + " MESSAGE " + fault.getMessage() + " DETAIL " + fault.getDetail());
+                                    Notify.message(getApplicationContext(), "Error. Network connection blocked");
+                                }
+                                // Generic error
                                 Notify.out("Error, " + fault.getCode() + " " + fault.getMessage());
                             }
                         }, true);
