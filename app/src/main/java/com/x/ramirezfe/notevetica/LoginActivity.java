@@ -1,7 +1,10 @@
 package com.x.ramirezfe.notevetica;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -14,6 +17,10 @@ import com.backendless.Backendless;
 import com.backendless.BackendlessUser;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -68,41 +75,59 @@ public class LoginActivity extends AppCompatActivity {
 
     @OnClick(R.id.loginButton)
     public void login(View view) {
-        // Get info
-        String email = emailEditText.getText().toString();
-        String password = passwordEditText.getText().toString();
+        // Check for an internet connection in a different thread
+        new Thread() {
+            public void run() {
+                try {
+                    if (hasInternetAccess(getApplicationContext())) {
+                        // Get info
+                        String email = emailEditText.getText().toString();
+                        String password = passwordEditText.getText().toString();
 
-        // Check if fields are not empty
-        if (email.equals("") || email.isEmpty()) {
-            Notify.snack(view, "Email cannot be empty");
-        } else if (password.equals("") || password.isEmpty()) {
-            Notify.snack(view, "Password cannot be empty");
-        }
+                        // Check if fields are not empty
+                        if (email.equals("") || email.isEmpty()) {
+                            //Notify.snack(view, "Email cannot be empty");
+                        } else if (password.equals("") || password.isEmpty()) {
+                            //  Notify.snack(view, "Password cannot be empty");
+                        }
 
-        // Log in
-        Backendless.UserService.login(email, password, new AsyncCallback<BackendlessUser>() {
-            public void handleResponse(BackendlessUser user) {
-                Notify.out("Login Successful. " + user.getProperties());
-                Backendless.UserService.setCurrentUser(user);
-                /*
-                    Using SharedPreferences to know if a user has logged in.
-                    If they have go, straight to the MainActivity
-                 */
-                Boolean userLoggedIn = true;
-                SharedPreferences.Editor editor = getSharedPreferences(SKIP_TO_MAIN_ACTIVITY, MODE_PRIVATE).edit();
-                editor.putBoolean(SUCCESSFULLY_LOGGED_IN, userLoggedIn);
-                editor.commit();
-                successfulLogin();
-            }
+                        // Log in
+                        Backendless.UserService.login(email, password, new AsyncCallback<BackendlessUser>() {
+                            public void handleResponse(BackendlessUser user) {
+                                Notify.out("Login Successful. " + user.getProperties());
+                                Backendless.UserService.setCurrentUser(user);
+                                /*
+                                    Using SharedPreferences to know if a user has logged in.
+                                    If they have go, straight to the MainActivity
+                                 */
+                                Boolean userLoggedIn = true;
+                                SharedPreferences.Editor editor = getSharedPreferences(SKIP_TO_MAIN_ACTIVITY, MODE_PRIVATE).edit();
+                                editor.putBoolean(SUCCESSFULLY_LOGGED_IN, userLoggedIn);
+                                editor.commit();
+                                successfulLogin();
+                            }
 
-            public void handleFault(BackendlessFault fault) {
-                // Invalid username/password
-                if (fault.getCode().equals("3003")) {
-                    Notify.message(getApplicationContext(), "Invalid username and/or password");
+                            public void handleFault(BackendlessFault fault) {
+                                // Invalid username/password
+                                if (fault.getCode().equals("3003")) {
+                                    Notify.message(getApplicationContext(), "Invalid username and/or password");
+                                }
+                                Notify.out("Error, " + fault.getCode() + " " + fault.getMessage());
+                            }
+                        }, true);
+                        // No internet connection
+                    } else {
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                Notify.message(getApplicationContext(), "No internet connection detected");
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    Notify.out("Exception: " + e.getMessage());
                 }
-                Notify.out("Error, " + fault.getCode() + " " + fault.getMessage());
             }
-        }, true);
+        }.start();
     }
 
     // Login was good, start MainActivity
@@ -128,6 +153,40 @@ public class LoginActivity extends AppCompatActivity {
         } else {
             return false;
         }
+    }
+
+    /**
+     * @return true if a network connection is detected
+     */
+    public boolean isNetworkAvailable(Context context) {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
+
+    /**
+     * Detect internet connection by calling an https request googles network portal
+     *
+     * @param context your context
+     * @return true if a network connection is detected
+     */
+    public boolean hasInternetAccess(Context context) {
+        if (isNetworkAvailable(context)) {
+            try {
+                HttpURLConnection urlc = (HttpURLConnection)
+                        (new URL("http://clients3.google.com/generate_204").openConnection());
+                urlc.setRequestProperty("User-Agent", "Android");
+                urlc.setRequestProperty("Connection", "close");
+                urlc.setConnectTimeout(1500);
+                urlc.connect();
+                return (urlc.getResponseCode() == 204 && urlc.getContentLength() == 0);
+            } catch (IOException e) {
+                Notify.out("Error checking internet connection" + e.getMessage());
+            }
+        } else {
+            Notify.out("No network available");
+        }
+        return false;
     }
 
 }
